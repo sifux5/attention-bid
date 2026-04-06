@@ -6,36 +6,86 @@ import java.util.Map;
 
 public class Main {
 
+    private static final String AD_CATEGORY = "Kids";
+    private static final double SPEND_THRESHOLD = 0.29;
+
+    private static final double CATEGORY_MATCH_MULTIPLIER    = 2.0;
+    private static final double CATEGORY_PARTIAL_MULTIPLIER  = 0.8;
+    private static final double CATEGORY_MISMATCH_MULTIPLIER = 0.5;
+    private static final double SUBSCRIBED_MULTIPLIER        = 1.5;
+    private static final double INTEREST_MATCH_MULTIPLIER    = 1.5;
+    private static final double YOUNG_AGE_MULTIPLIER         = 1.3;
+    private static final double HIGH_ENGAGEMENT_MULTIPLIER   = 1.3;
+    private static final double MID_ENGAGEMENT_MULTIPLIER    = 1.1;
+
+    private static final long VIEW_BRACKET_TINY   = 99;
+    private static final long VIEW_BRACKET_SMALL  = 999;
+    private static final long VIEW_BRACKET_MEDIUM = 4_999;
+    private static final long VIEW_BRACKET_LARGE  = 24_999;
+    private static final long VIEW_BRACKET_XLARGE = 99_999;
+    private static final long VIEW_BRACKET_HUGE   = 499_999;
+
+    private static final double VIEW_SCORE_TINY   = 3.0;
+    private static final double VIEW_SCORE_SMALL  = 2.5;
+    private static final double VIEW_SCORE_MEDIUM = 2.0;
+    private static final double VIEW_SCORE_LARGE  = 1.5;
+    private static final double VIEW_SCORE_XLARGE = 1.0;
+    private static final double VIEW_SCORE_HUGE   = 0.6;
+    private static final double VIEW_SCORE_VIRAL  = 0.3;
+
+    private static final double HIGH_ENGAGEMENT_RATIO = 0.03;
+    private static final double MID_ENGAGEMENT_RATIO  = 0.01;
+
+    private static final int BID_TIER1_START = 200;
+    private static final int BID_TIER1_MAX   = 1000;
+    private static final int BID_TIER2_START = 100;
+    private static final int BID_TIER2_MAX   = 500;
+    private static final int BID_TIER3_START = 50;
+    private static final int BID_TIER3_MAX   = 250;
+    private static final int BID_TIER4_START = 20;
+    private static final int BID_TIER4_MAX   = 100;
+    private static final int BID_MIN_START   = 3;
+    private static final int BID_MIN_MAX     = 15;
+
+    private static final double SCORE_TIER1 = 5.0;
+    private static final double SCORE_TIER2 = 3.5;
+    private static final double SCORE_TIER3 = 2.5;
+    private static final double SCORE_TIER4 = 1.5;
+
     static double calculateScore(String videoCategory, long viewCount, long commentCount,
                                  boolean subscribed, String interests, String age) {
         double score = 1.0;
 
-        if      (viewCount <= 99)     score *= 3.0;
-        else if (viewCount <= 999)    score *= 2.5;
-        else if (viewCount <= 4999)   score *= 2.0;
-        else if (viewCount <= 24999)  score *= 1.5;
-        else if (viewCount <= 99999)  score *= 1.0;
-        else if (viewCount <= 499999) score *= 0.6;
-        else                          score *= 0.3;
+        if      (viewCount <= VIEW_BRACKET_TINY)   score *= VIEW_SCORE_TINY;
+        else if (viewCount <= VIEW_BRACKET_SMALL)  score *= VIEW_SCORE_SMALL;
+        else if (viewCount <= VIEW_BRACKET_MEDIUM) score *= VIEW_SCORE_MEDIUM;
+        else if (viewCount <= VIEW_BRACKET_LARGE)  score *= VIEW_SCORE_LARGE;
+        else if (viewCount <= VIEW_BRACKET_XLARGE) score *= VIEW_SCORE_XLARGE;
+        else if (viewCount <= VIEW_BRACKET_HUGE)   score *= VIEW_SCORE_HUGE;
+        else                                        score *= VIEW_SCORE_VIRAL;
 
-        if (videoCategory.equalsIgnoreCase("Kids")) score *= 2.0;
-        else if (videoCategory.equalsIgnoreCase("Music")   ||
+        if (videoCategory.equalsIgnoreCase(AD_CATEGORY)) {
+            score *= CATEGORY_MATCH_MULTIPLIER;
+        } else if (videoCategory.equalsIgnoreCase("Music")   ||
                 videoCategory.equalsIgnoreCase("DIY")     ||
-                videoCategory.equalsIgnoreCase("Cooking")) score *= 0.8;
-        else score *= 0.5;
+                videoCategory.equalsIgnoreCase("Cooking")) {
+            score *= CATEGORY_PARTIAL_MULTIPLIER;
+        } else {
+            score *= CATEGORY_MISMATCH_MULTIPLIER;
+        }
 
-        if (subscribed) score *= 1.5;
+        if (subscribed) score *= SUBSCRIBED_MULTIPLIER;
 
-        if (interests.contains("Kids")) score *= 1.5;
+        if (interests.contains(AD_CATEGORY)) score *= INTEREST_MATCH_MULTIPLIER;
 
         if (age.equals("13-17") || age.equals("18-24") || age.equals("25-34")) {
-            score *= 1.3;
+            score *= YOUNG_AGE_MULTIPLIER;
         }
 
         if (viewCount > 0 && commentCount > 0) {
             double ratio = (double) commentCount / viewCount;
-            if (ratio > 0.03) score *= 1.3;
-            else if (ratio > 0.01) score *= 1.1;
+            if      (ratio > HIGH_ENGAGEMENT_RATIO) score *= HIGH_ENGAGEMENT_MULTIPLIER;
+            else if (ratio > MID_ENGAGEMENT_RATIO)  score *= MID_ENGAGEMENT_MULTIPLIER;
         }
 
         return score;
@@ -43,12 +93,13 @@ public class Main {
 
     public static void main(String[] args) throws Exception {
         long budget = Long.parseLong(args[0]);
+        long spendLimit = (long)(budget * SPEND_THRESHOLD);
 
         BufferedReader in = new BufferedReader(new InputStreamReader(System.in));
         PrintStream out = System.out;
         PrintStream log = System.err;
 
-        out.println("Kids");
+        out.println(AD_CATEGORY);
         out.flush();
 
         long ebucks = budget;
@@ -86,7 +137,7 @@ public class Main {
 
             long spent = budget - ebucks;
 
-            if (spent >= 2_900_000 || ebucks <= 0) {
+            if (spent >= spendLimit || ebucks <= 0) {
                 out.println("1 1");
                 out.flush();
                 String skip = in.readLine();
@@ -103,17 +154,11 @@ public class Main {
             int startBid;
             int maxBid;
 
-            if (score >= 5.0) {
-                startBid = 200; maxBid = 1000;
-            } else if (score >= 3.5) {
-                startBid = 100; maxBid = 500;
-            } else if (score >= 2.5) {
-                startBid = 50;  maxBid = 250;
-            } else if (score >= 1.5) {
-                startBid = 20;  maxBid = 100;
-            } else {
-                startBid = 3;   maxBid = 15;
-            }
+            if      (score >= SCORE_TIER1) { startBid = BID_TIER1_START; maxBid = BID_TIER1_MAX; }
+            else if (score >= SCORE_TIER2) { startBid = BID_TIER2_START; maxBid = BID_TIER2_MAX; }
+            else if (score >= SCORE_TIER3) { startBid = BID_TIER3_START; maxBid = BID_TIER3_MAX; }
+            else if (score >= SCORE_TIER4) { startBid = BID_TIER4_START; maxBid = BID_TIER4_MAX; }
+            else                           { startBid = BID_MIN_START;   maxBid = BID_MIN_MAX;   }
 
             if (maxBid > ebucks)   maxBid   = (int) ebucks;
             if (startBid > maxBid) startBid = maxBid;
