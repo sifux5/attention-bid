@@ -7,6 +7,10 @@ import java.util.Map;
 public class Main {
 
     private static final String AD_CATEGORY = "Kids";
+    private static final String CAT_MUSIC   = "Music";
+    private static final String CAT_DIY     = "DIY";
+    private static final String CAT_COOKING = "Cooking";
+
     private static final double SPEND_THRESHOLD = 0.29;
 
     private static final double CATEGORY_MATCH_MULTIPLIER    = 2.0;
@@ -66,9 +70,9 @@ public class Main {
 
         if (videoCategory.equalsIgnoreCase(AD_CATEGORY)) {
             score *= CATEGORY_MATCH_MULTIPLIER;
-        } else if (videoCategory.equalsIgnoreCase("Music")   ||
-                videoCategory.equalsIgnoreCase("DIY")     ||
-                videoCategory.equalsIgnoreCase("Cooking")) {
+        } else if (videoCategory.equalsIgnoreCase(CAT_MUSIC)   ||
+                videoCategory.equalsIgnoreCase(CAT_DIY)     ||
+                videoCategory.equalsIgnoreCase(CAT_COOKING)) {
             score *= CATEGORY_PARTIAL_MULTIPLIER;
         } else {
             score *= CATEGORY_MISMATCH_MULTIPLIER;
@@ -103,7 +107,6 @@ public class Main {
         out.flush();
 
         long ebucks = budget;
-        int round = 0;
 
         while (true) {
             String line = in.readLine();
@@ -135,9 +138,9 @@ public class Main {
             double score = calculateScore(videoCategory, viewCount, commentCount,
                     subscribed, interests, age);
 
-            long spent = budget - ebucks;
+            long totalSpent = budget - ebucks;
 
-            if (spent >= spendLimit || ebucks <= 0) {
+            if (totalSpent >= spendLimit || ebucks <= 0) {
                 out.println("1 1");
                 out.flush();
                 String skip = in.readLine();
@@ -147,7 +150,6 @@ public class Main {
                     skip = in.readLine();
                     if (skip == null) break;
                 }
-                round++;
                 continue;
             }
 
@@ -176,13 +178,11 @@ public class Main {
             }
 
             if (result.startsWith("W")) {
-                int spent2 = Integer.parseInt(result.substring(2).trim());
-                ebucks -= spent2;
-                log.println("R" + round + " Won! score=" + String.format("%.2f", score)
-                        + " spent=" + spent2 + " rem=" + ebucks);
+                int cost = Integer.parseInt(result.substring(2).trim());
+                ebucks -= cost;
+                log.println("Won! score=" + String.format("%.2f", score)
+                        + " cost=" + cost + " rem=" + ebucks);
             }
-
-            round++;
         }
     }
 }
